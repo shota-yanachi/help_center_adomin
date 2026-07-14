@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
+import { EditCategoryModal } from "./EditCategoryModal";
+import { EditSectionModal } from "./EditSectionModal";
 import { NewCategoryModal } from "./NewCategoryModal";
 import { NewSectionModal } from "./NewSectionModal";
 import { SettingsModal } from "./SettingsModal";
+import { Category, Section } from "@/lib/types";
 
 export function Sidebar() {
   const {
@@ -21,6 +24,8 @@ export function Sidebar() {
   const [modal, setModal] = useState<"category" | "section" | "settings" | null>(
     null
   );
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editingSection, setEditingSection] = useState<Section | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   async function handleDeleteCategory(categoryId: number, name: string) {
@@ -97,6 +102,15 @@ export function Sidebar() {
                   </span>
                   <button
                     type="button"
+                    onClick={() => setEditingCategory(category)}
+                    className="shrink-0 rounded px-1 text-zinc-600 opacity-0 hover:bg-zinc-800 hover:text-zinc-200 group-hover/category:opacity-100"
+                    title="カテゴリを編集"
+                    aria-label="カテゴリを編集"
+                  >
+                    ✎
+                  </button>
+                  <button
+                    type="button"
                     disabled={deletingId === category.id}
                     onClick={() => handleDeleteCategory(category.id, category.name)}
                     className="shrink-0 rounded px-1 text-zinc-600 opacity-0 hover:bg-zinc-800 hover:text-red-400 group-hover/category:opacity-100"
@@ -124,6 +138,15 @@ export function Sidebar() {
                           }`}
                         >
                           {section.name}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingSection(section)}
+                          className="shrink-0 rounded px-1 text-zinc-600 opacity-0 hover:bg-zinc-800 hover:text-zinc-200 group-hover/section:opacity-100"
+                          title="セクションを編集"
+                          aria-label="セクションを編集"
+                        >
+                          ✎
                         </button>
                         <button
                           type="button"
@@ -175,6 +198,18 @@ export function Sidebar() {
       )}
       {modal === "section" && <NewSectionModal onClose={() => setModal(null)} />}
       {modal === "settings" && <SettingsModal onClose={() => setModal(null)} />}
+      {editingCategory && (
+        <EditCategoryModal
+          category={editingCategory}
+          onClose={() => setEditingCategory(null)}
+        />
+      )}
+      {editingSection && (
+        <EditSectionModal
+          section={editingSection}
+          onClose={() => setEditingSection(null)}
+        />
+      )}
     </>
   );
 }

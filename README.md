@@ -18,10 +18,12 @@ npm run dev
 ## 画面構成
 
 - 左サイドバー（ダーク、幅170px）: カテゴリ→セクションのツリー（常時展開）。
-  カテゴリ・セクションはホバーで×ボタンが出て削除可能（配下も削除/アーカイブされるため確認ダイアログあり）。
-  下部に「＋新規カテゴリ」「＋新規セクション」「⚙ 接続設定」。
+  カテゴリ・セクションはホバーで✎(編集)・×(削除)ボタンが出る。編集はモーダルで
+  名前・説明（セクションは所属カテゴリの移動も）を変更、削除は配下も削除/アーカイブされるため
+  確認ダイアログあり。下部に「＋新規カテゴリ」「＋新規セクション」「⚙ 接続設定」。
 - メインパネル: パンくず → 記事一覧（チェックボックス・タイトル・ID・公開範囲バッジ・切替ボタン、
-  クリックで本文/ラベルを展開表示） → 記事追加UI（左: 個別入力フォーム／右: JSON一括入力）。
+  クリックで本文/ラベルを展開表示し「編集」ボタンからタイトル・本文・ラベルをその場で編集可能） →
+  記事追加UI（左: 個別入力フォーム／右: JSON一括入力）。
   チェックボックスで複数選択し、上部の「選択した記事をアーカイブ」から一括削除できる
   （Zendesk仕様上、記事のDELETEは完全削除ではなくアーカイブ）。
 - セクション未選択時・未接続時は案内文のみ表示。
@@ -36,13 +38,15 @@ npm run dev
 |---|---|---|---|---|
 | GET | `/categories` | なし | なし | |
 | POST | `/categories` | なし | `{name,description?,locale?}` または配列 | |
+| PATCH | `/categories` | `categoryId` | 更新したいフィールドのみ | |
 | DELETE | `/categories` | `categoryId` | なし | 配下も含めて完全削除 |
 | GET | `/sections` | `categoryId` | なし | |
 | POST | `/sections` | `categoryId` | `{name,description?,locale?}` または配列 | |
+| PATCH | `/sections` | `sectionId` | 更新したいフィールドのみ | `category_id`で別カテゴリへ移動可 |
 | DELETE | `/sections` | `sectionId` | なし | 配下の記事もアーカイブ |
 | GET | `/articles` | `sectionId` | なし | |
 | POST | `/articles` | `sectionId` | `{title,body?,label_names?,user_segment_id?,...}` または配列 | |
-| PATCH | `/articles` | `articleId` | 更新したいフィールドのみ（例: `{user_segment_id}`） | |
+| PATCH | `/articles` | `articleId` | 更新したいフィールドのみ（例: `{title,body,label_names,user_segment_id}`） | |
 | DELETE | `/articles` | `articleId` | なし | 完全削除ではなくアーカイブ |
 | GET | `/user-segments` | なし | なし | |
 

@@ -104,6 +104,19 @@ export function createCategoriesBulk(
   });
 }
 
+export function updateCategory(
+  settings: ConnectionSettings,
+  categoryId: number,
+  data: { name?: string; description?: string; locale?: string }
+) {
+  return request<{ category: Category }>(
+    settings,
+    "/categories",
+    { method: "PATCH", body: JSON.stringify(data) },
+    { categoryId }
+  ).then((r) => r.category);
+}
+
 export function deleteCategory(settings: ConnectionSettings, categoryId: number) {
   return request<{ deleted: boolean; categoryId: string }>(
     settings,
@@ -148,6 +161,19 @@ export function createSectionsBulk(
     { method: "POST", body: JSON.stringify(items) },
     { categoryId }
   );
+}
+
+export function updateSection(
+  settings: ConnectionSettings,
+  sectionId: number,
+  data: { name?: string; description?: string; locale?: string; category_id?: number }
+) {
+  return request<{ section: Section }>(
+    settings,
+    "/sections",
+    { method: "PATCH", body: JSON.stringify(data) },
+    { sectionId }
+  ).then((r) => r.section);
 }
 
 export function deleteSection(settings: ConnectionSettings, sectionId: number) {
@@ -214,17 +240,25 @@ export function deleteArticle(settings: ConnectionSettings, articleId: number) {
   );
 }
 
+export function updateArticle(
+  settings: ConnectionSettings,
+  articleId: number,
+  data: Partial<ArticleInput>
+) {
+  return request<{ article: Article }>(
+    settings,
+    "/articles",
+    { method: "PATCH", body: JSON.stringify(data) },
+    { articleId }
+  ).then((r) => r.article);
+}
+
 export function updateArticleVisibility(
   settings: ConnectionSettings,
   articleId: number,
   userSegmentId: number | null
 ) {
-  return request<{ article: Article }>(
-    settings,
-    "/articles",
-    { method: "PATCH", body: JSON.stringify({ user_segment_id: userSegmentId }) },
-    { articleId }
-  ).then((r) => r.article);
+  return updateArticle(settings, articleId, { user_segment_id: userSegmentId });
 }
 
 // --- ユーザーセグメント ---

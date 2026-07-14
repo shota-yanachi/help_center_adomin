@@ -143,7 +143,38 @@ POST /categories
 
 ---
 
-## 3. カテゴリ削除
+## 3. カテゴリ更新
+
+```
+PATCH /categories?categoryId=xxxx
+```
+
+**クエリパラメータ**
+| パラメータ | 必須 | 説明 |
+|---|---|---|
+| `categoryId` | **必須** | 更新対象のカテゴリID |
+| `brandDomain` | 任意 | 接続先ブランドの上書き |
+
+**リクエストBody** — 更新したいフィールドのみでOK（内部でZendeskの`PUT /categories/{id}.json`にそのまま渡されます）
+
+名前だけ変える場合:
+```json
+{ "name": "新しいカテゴリ名" }
+```
+
+説明文だけ変える場合:
+```json
+{ "description": "更新後の説明文" }
+```
+
+**レスポンス例（200）**
+```json
+{ "category": { "id": 5506621409950, "name": "新しいカテゴリ名", "...": "..." } }
+```
+
+---
+
+## 4. カテゴリ削除
 
 ```
 DELETE /categories?categoryId=xxxx
@@ -166,7 +197,7 @@ DELETE /categories?categoryId=xxxx
 
 ---
 
-## 4. セクション一覧取得
+## 5. セクション一覧取得
 
 ```
 GET /sections
@@ -191,7 +222,7 @@ GET /sections
 
 ---
 
-## 5. セクション作成
+## 6. セクション作成
 
 ```
 POST /sections?categoryId=xxxx
@@ -220,7 +251,38 @@ POST /sections?categoryId=xxxx
 
 ---
 
-## 6. セクション削除
+## 7. セクション更新
+
+```
+PATCH /sections?sectionId=xxxx
+```
+
+**クエリパラメータ**
+| パラメータ | 必須 | 説明 |
+|---|---|---|
+| `sectionId` | **必須** | 更新対象のセクションID |
+| `brandDomain` | 任意 | 接続先ブランドの上書き |
+
+**リクエストBody** — 更新したいフィールドのみでOK（内部でZendeskの`PUT /sections/{id}.json`にそのまま渡されます）
+
+名前だけ変える場合:
+```json
+{ "name": "新しいセクション名" }
+```
+
+別のカテゴリに移動する場合:
+```json
+{ "category_id": 5506621409999 }
+```
+
+**レスポンス例（200）**
+```json
+{ "section": { "id": 5506622925982, "name": "新しいセクション名", "...": "..." } }
+```
+
+---
+
+## 8. セクション削除
 
 ```
 DELETE /sections?sectionId=xxxx
@@ -243,7 +305,7 @@ DELETE /sections?sectionId=xxxx
 
 ---
 
-## 7. 記事一覧取得
+## 9. 記事一覧取得
 
 ```
 GET /articles
@@ -276,7 +338,7 @@ GET /articles
 
 ---
 
-## 8. 記事作成
+## 10. 記事作成
 
 ```
 POST /articles?sectionId=xxxx
@@ -321,7 +383,7 @@ POST /articles?sectionId=xxxx
 
 ---
 
-## 9. 記事の部分更新（公開範囲の変更など）
+## 11. 記事の部分更新（タイトル・本文・ラベル・公開範囲など）
 
 ```
 PATCH /articles?articleId=xxxx
@@ -350,6 +412,11 @@ PATCH /articles?articleId=xxxx
 { "body": "<p>更新後の本文</p>" }
 ```
 
+タイトル・本文・ラベルをまとめて更新する場合:
+```json
+{ "title": "新しいタイトル", "body": "<p>新しい本文</p>", "label_names": ["タグ1", "タグ2"] }
+```
+
 **レスポンス例（200）**
 ```json
 { "article": { "id": 98765, "user_segment_id": null, "...": "..." } }
@@ -357,7 +424,7 @@ PATCH /articles?articleId=xxxx
 
 ---
 
-## 10. 記事削除（アーカイブ）
+## 12. 記事削除（アーカイブ）
 
 ```
 DELETE /articles?articleId=xxxx
@@ -383,7 +450,7 @@ DELETE /articles?articleId=xxxx
 
 ---
 
-## 11. セクション/カテゴリ配下の記事を一括で公開範囲変更
+## 13. セクション/カテゴリ配下の記事を一括で公開範囲変更
 
 ```
 POST /bulk-visibility
@@ -427,7 +494,7 @@ POST /bulk-visibility?categoryId=5506621409950&userSegmentId=12345678
 
 ---
 
-## 12. ユーザーセグメント一覧取得
+## 14. ユーザーセグメント一覧取得
 
 ```
 GET /user-segments
@@ -452,7 +519,7 @@ GET /user-segments
 
 ---
 
-## 13. ブランド一覧取得
+## 15. ブランド一覧取得
 
 ```
 GET /brands
@@ -477,13 +544,15 @@ GET /brands
 |---|---|---|---|---|
 | GET | `/categories` | なし | なし | |
 | POST | `/categories` | なし | `{locale,name,description}` または配列 | |
+| PATCH | `/categories` | `categoryId` | 更新したいフィールドのみ | |
 | DELETE | `/categories` | `categoryId` | なし | 配下も含めて完全削除 |
 | GET | `/sections` | `categoryId` | なし | |
 | POST | `/sections` | `categoryId` | `{locale,name,description}` または配列 | |
+| PATCH | `/sections` | `sectionId` | 更新したいフィールドのみ | `category_id`で別カテゴリへ移動可 |
 | DELETE | `/sections` | `sectionId` | なし | 配下の記事もアーカイブ |
 | GET | `/articles` | `sectionId` | なし | |
 | POST | `/articles` | `sectionId` | `{title,body,locale,user_segment_id,permission_group_id,label_names}` または配列 | |
-| PATCH | `/articles` | `articleId` | 更新したいフィールドのみ | |
+| PATCH | `/articles` | `articleId` | 更新したいフィールドのみ | タイトル・本文・ラベル・公開範囲すべて対応 |
 | DELETE | `/articles` | `articleId` | なし | **完全削除ではなくアーカイブ** |
 | POST | `/bulk-visibility` | `sectionId` または `categoryId`, `userSegmentId` | なし | |
 | GET | `/user-segments` | なし | なし | |
@@ -491,5 +560,5 @@ GET /brands
 
 すべて `brandDomain` をオプション付与可能。全エンドポイント `X-API-Key` ヘッダー必須（`DASHBOARD_API_KEY`未設定時のみ任意）。
 
-> 本ダッシュボード（help-center-admin）が実際に利用しているのは 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12 です。11, 13 は現時点でUIから未使用（将来の拡張余地として記載）。
+> 本ダッシュボード（help-center-admin）が実際に利用しているのは 1〜12 です。13, 15 は現時点でUIから未使用（将来の拡張余地として記載）。
 > なお本アプリの⚙接続設定は現状Worker URLのみで、`X-API-Key`/`brandDomain`は送信していません（[README](../README.md)参照）。

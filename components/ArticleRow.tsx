@@ -13,10 +13,18 @@ export function ArticleRow({
   selected: boolean;
   onToggleSelect: () => void;
 }) {
-  const { segments, toggleArticleVisibility } = useDashboard();
+  const { segments, toggleArticleVisibility, editArticle } = useDashboard();
   const [open, setOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(article.title);
+  const [bodyDraft, setBodyDraft] = useState(article.body ?? "");
+  const [labelsDraft, setLabelsDraft] = useState(
+    (article.label_names ?? []).join(", ")
+  );
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const currentSegment = segments.find((s) => s.id === article.user_segment_id);
   const isEveryone = !article.user_segment_id;
@@ -29,6 +37,34 @@ export function ArticleRow({
     } finally {
       setUpdating(false);
       setOpen(false);
+    }
+  }
+
+  function startEditing() {
+    setTitleDraft(article.title);
+    setBodyDraft(article.body ?? "");
+    setLabelsDraft((article.label_names ?? []).join(", "));
+    setSaveError(null);
+    setEditing(true);
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await editArticle(article.id, {
+        title: titleDraft.trim(),
+        body: bodyDraft,
+        label_names: labelsDraft
+          .split(",")
+          .map((l) => l.trim())
+          .filter(Boolean),
+      });
+      setEditing(false);
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : "保存に失敗しました");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -107,25 +143,88 @@ export function ArticleRow({
 
       {expanded && (
         <div className="border-t border-zinc-100 bg-zinc-50 px-4 py-3">
-          {article.label_names && article.label_names.length > 0 && (
-            <div className="mb-3 flex flex-wrap gap-1">
-              {article.label_names.map((l) => (
-                <span
-                  key={l}
-                  className="rounded-full bg-zinc-200 px-2 py-0.5 text-xs text-zinc-700"
-                >
-                  {l}
+          {editing ? (
+            <div className="flex flex-col gap-3">
+              {saveError && <p className="text-sm text-red-600">{saveError}</p>}
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium text-zinc-700">タイトル</span>
+                <input
+                  value={titleDraft}
+                  onChange={(e) => setTitleDraft(e.target.value)}
+                  className="input"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium text-zinc-700">本文（HTML）</span>
+                <textarea
+                  value={bodyDraft}
+                  onChange={(e) => setBodyDraft(e.target.value)}
+                  rows={8}
+                  className="input font-mono text-xs"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium text-zinc-700">
+                  ラベル（カンマ区切り）
                 </span>
-              ))}
+                <input
+                  value={labelsDraft}
+                  onChange={(e) => setLabelsDraft(e.target.value)}
+                  className="input"
+                />
+              </label>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditing(false)}
+                  className="btn-secondary"
+                >
+                  キャンセル
+                </button>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={handleSave}
+                  className="btn-primary"
+                >
+                  {saving ? "保存中..." : "保存"}
+                </button>
+              </div>
             </div>
-          )}
-          {article.body ? (
-            <div
-              className="article-body text-sm text-zinc-800"
-              dangerouslySetInnerHTML={{ __html: article.body }}
-            />
           ) : (
-            <p className="text-sm text-zinc-400">本文がありません</p>
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                {article.label_names && article.label_names.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {article.label_names.map((l) => (
+                      <span
+                        key={l}
+                        className="rounded-full bg-zinc-200 px-2 py-0.5 text-xs text-zinc-700"
+                      >
+                        {l}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span />
+                )}
+                <button
+                  type="button"
+                  onClick={startEditing}
+                  className="btn-secondary shrink-0 !px-2 !py-1 text-xs"
+                >
+                  編集
+                </button>
+              </div>
+              {article.body ? (
+                <div
+                  className="article-body text-sm text-zinc-800"
+                  dangerouslySetInnerHTML={{ __html: article.body }}
+                />
+              ) : (
+                <p className="text-sm text-zinc-400">本文がありません</p>
+              )}
+            </div>
           )}
         </div>
       )}

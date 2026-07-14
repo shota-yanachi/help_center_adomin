@@ -67,6 +67,16 @@ type DashboardState = {
   removeArticles: (
     articleIds: number[]
   ) => Promise<{ succeeded: number; failed: { id: number; message: string }[] }>;
+
+  editCategory: (
+    categoryId: number,
+    data: { name?: string; description?: string }
+  ) => Promise<void>;
+  editSection: (
+    sectionId: number,
+    data: { name?: string; description?: string; category_id?: number }
+  ) => Promise<void>;
+  editArticle: (articleId: number, data: Partial<ArticleInput>) => Promise<void>;
 };
 
 const DashboardContext = createContext<DashboardState | null>(null);
@@ -277,6 +287,33 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     [settings, refreshArticles]
   );
 
+  const editCategory = useCallback(
+    async (categoryId: number, data: { name?: string; description?: string }) => {
+      await api.updateCategory(settings, categoryId, data);
+      await refreshTree();
+    },
+    [settings, refreshTree]
+  );
+
+  const editSection = useCallback(
+    async (
+      sectionId: number,
+      data: { name?: string; description?: string; category_id?: number }
+    ) => {
+      await api.updateSection(settings, sectionId, data);
+      await refreshTree();
+    },
+    [settings, refreshTree]
+  );
+
+  const editArticle = useCallback(
+    async (articleId: number, data: Partial<ArticleInput>) => {
+      await api.updateArticle(settings, articleId, data);
+      await refreshArticles();
+    },
+    [settings, refreshArticles]
+  );
+
   const value = useMemo<DashboardState>(
     () => ({
       settings,
@@ -305,6 +342,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       removeCategory,
       removeSection,
       removeArticles,
+      editCategory,
+      editSection,
+      editArticle,
     }),
     [
       settings,
@@ -333,6 +373,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       removeCategory,
       removeSection,
       removeArticles,
+      editCategory,
+      editSection,
+      editArticle,
     ]
   );
 
