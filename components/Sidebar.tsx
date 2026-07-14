@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
 import { EditCategoryModal } from "./EditCategoryModal";
 import { EditSectionModal } from "./EditSectionModal";
@@ -8,6 +8,13 @@ import { NewCategoryModal } from "./NewCategoryModal";
 import { NewSectionModal } from "./NewSectionModal";
 import { SettingsModal } from "./SettingsModal";
 import { Category, Section } from "@/lib/types";
+import {
+  DEFAULT_SIDEBAR_WIDTH,
+  MAX_SIDEBAR_WIDTH,
+  MIN_SIDEBAR_WIDTH,
+  loadSidebarWidth,
+  saveSidebarWidth,
+} from "@/lib/storage";
 
 export function Sidebar() {
   const {
@@ -27,6 +34,48 @@ export function Sidebar() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editingSection, setEditingSection] = useState<Section | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [width, setWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
+  const resizing = useRef(false);
+
+  useEffect(() => {
+    // localStorageはサーバーに存在しないため、マウント後にクライアントで読み直す
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setWidth(loadSidebarWidth());
+  }, []);
+
+  useEffect(() => {
+    function handleMouseMove(e: MouseEvent) {
+      if (!resizing.current) return;
+      const next = Math.min(
+        MAX_SIDEBAR_WIDTH,
+        Math.max(MIN_SIDEBAR_WIDTH, e.clientX)
+      );
+      setWidth(next);
+    }
+    function handleMouseUp() {
+      if (!resizing.current) return;
+      resizing.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      setWidth((w) => {
+        saveSidebarWidth(w);
+        return w;
+      });
+    }
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
+
+  function startResize(e: React.MouseEvent) {
+    e.preventDefault();
+    resizing.current = true;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  }
 
   async function handleDeleteCategory(categoryId: number, name: string) {
     if (
@@ -70,7 +119,10 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="flex h-full w-[170px] shrink-0 flex-col bg-zinc-900 text-zinc-300">
+      <aside
+        style={{ width }}
+        className="flex h-full shrink-0 flex-col bg-zinc-900 text-zinc-300"
+      >
         <div className="border-b border-zinc-800 px-3 py-3">
           <span className="text-xs font-semibold tracking-wide text-zinc-100">
             Help Center
@@ -103,7 +155,7 @@ export function Sidebar() {
                   <button
                     type="button"
                     onClick={() => setEditingCategory(category)}
-                    className="shrink-0 rounded px-1 text-zinc-600 opacity-0 hover:bg-zinc-800 hover:text-zinc-200 group-hover/category:opacity-100"
+                    className="shrink-0 rounded px-1 text-zinc-400 opacity-0 hover:bg-zinc-700 hover:text-white group-hover/category:opacity-100"
                     title="カテゴリを編集"
                     aria-label="カテゴリを編集"
                   >
@@ -113,7 +165,7 @@ export function Sidebar() {
                     type="button"
                     disabled={deletingId === category.id}
                     onClick={() => handleDeleteCategory(category.id, category.name)}
-                    className="shrink-0 rounded px-1 text-zinc-600 opacity-0 hover:bg-zinc-800 hover:text-red-400 group-hover/category:opacity-100"
+                    className="shrink-0 rounded px-1 text-zinc-400 opacity-0 hover:bg-zinc-700 hover:text-red-400 group-hover/category:opacity-100"
                     title="カテゴリを削除"
                     aria-label="カテゴリを削除"
                   >
@@ -142,7 +194,7 @@ export function Sidebar() {
                         <button
                           type="button"
                           onClick={() => setEditingSection(section)}
-                          className="shrink-0 rounded px-1 text-zinc-600 opacity-0 hover:bg-zinc-800 hover:text-zinc-200 group-hover/section:opacity-100"
+                          className="shrink-0 rounded px-1 text-zinc-400 opacity-0 hover:bg-zinc-700 hover:text-white group-hover/section:opacity-100"
                           title="セクションを編集"
                           aria-label="セクションを編集"
                         >
@@ -154,7 +206,7 @@ export function Sidebar() {
                           onClick={() =>
                             handleDeleteSection(category.id, section.id, section.name)
                           }
-                          className="shrink-0 rounded px-1 text-zinc-600 opacity-0 hover:bg-zinc-800 hover:text-red-400 group-hover/section:opacity-100"
+                          className="shrink-0 rounded px-1 text-zinc-400 opacity-0 hover:bg-zinc-700 hover:text-red-400 group-hover/section:opacity-100"
                           title="セクションを削除"
                           aria-label="セクションを削除"
                         >
@@ -192,6 +244,14 @@ export function Sidebar() {
           </button>
         </div>
       </aside>
+
+      <div
+        onMouseDown={startResize}
+        role="separator"
+        aria-orientation="vertical"
+        title="ドラッグして幅を変更"
+        className="w-1 shrink-0 cursor-col-resize bg-zinc-800 hover:bg-zinc-500 active:bg-zinc-400"
+      />
 
       {modal === "category" && (
         <NewCategoryModal onClose={() => setModal(null)} />
