@@ -143,7 +143,30 @@ POST /categories
 
 ---
 
-## 3. セクション一覧取得
+## 3. カテゴリ削除
+
+```
+DELETE /categories?categoryId=xxxx
+```
+
+**クエリパラメータ**
+| パラメータ | 必須 | 説明 |
+|---|---|---|
+| `categoryId` | **必須** | 削除対象のカテゴリID |
+| `brandDomain` | 任意 | 接続先ブランドの上書き |
+
+**リクエストBody** — 不要
+
+> ⚠️ **警告**: カテゴリを削除すると、**配下の全セクション・全記事も完全に削除されます**（Zendesk側の仕様）。この操作は取り消せません。
+
+**レスポンス例（200）** — Zendeskは成功時 `204 No Content`（bodyなし）を返すため、Worker側で整形して返します
+```json
+{ "deleted": true, "categoryId": "5506621409950" }
+```
+
+---
+
+## 4. セクション一覧取得
 
 ```
 GET /sections
@@ -168,7 +191,7 @@ GET /sections
 
 ---
 
-## 4. セクション作成
+## 5. セクション作成
 
 ```
 POST /sections?categoryId=xxxx
@@ -197,7 +220,30 @@ POST /sections?categoryId=xxxx
 
 ---
 
-## 5. 記事一覧取得
+## 6. セクション削除
+
+```
+DELETE /sections?sectionId=xxxx
+```
+
+**クエリパラメータ**
+| パラメータ | 必須 | 説明 |
+|---|---|---|
+| `sectionId` | **必須** | 削除対象のセクションID |
+| `brandDomain` | 任意 | 接続先ブランドの上書き |
+
+**リクエストBody** — 不要
+
+> ⚠️ **警告**: セクションを削除すると、**配下の全記事もアーカイブされます**（Zendesk側の仕様）。
+
+**レスポンス例（200）**
+```json
+{ "deleted": true, "sectionId": "5506622925982" }
+```
+
+---
+
+## 7. 記事一覧取得
 
 ```
 GET /articles
@@ -230,7 +276,7 @@ GET /articles
 
 ---
 
-## 6. 記事作成
+## 8. 記事作成
 
 ```
 POST /articles?sectionId=xxxx
@@ -275,7 +321,7 @@ POST /articles?sectionId=xxxx
 
 ---
 
-## 7. 記事の部分更新（公開範囲の変更など）
+## 9. 記事の部分更新（公開範囲の変更など）
 
 ```
 PATCH /articles?articleId=xxxx
@@ -311,7 +357,33 @@ PATCH /articles?articleId=xxxx
 
 ---
 
-## 8. セクション/カテゴリ配下の記事を一括で公開範囲変更
+## 10. 記事削除（アーカイブ）
+
+```
+DELETE /articles?articleId=xxxx
+```
+
+**クエリパラメータ**
+| パラメータ | 必須 | 説明 |
+|---|---|---|
+| `articleId` | **必須** | 削除対象の記事ID |
+| `brandDomain` | 任意 | 接続先ブランドの上書き |
+
+**リクエストBody** — 不要
+
+> ⚠️ **注意（カテゴリ/セクション削除との違い）**: Zendesk側の実際の仕様上、記事のDELETEは**完全削除ではなく「アーカイブ」（論理削除）**です。
+> - アーカイブされた記事はHelp Center上には表示されなくなり、AI Agentのナレッジソースからも参照されなくなります
+> - ただし完全には消えておらず、**Zendesk管理画面（Guide admin > アーカイブ済み記事）から復元・完全削除が可能**です
+> - 完全に削除したい場合は、このAPIを叩いた後、Zendesk管理画面側で改めて完全削除の操作が必要です
+
+**レスポンス例（200）** — Zendeskは成功時 `204 No Content`（bodyなし）を返すため、Worker側で整形して返します
+```json
+{ "archived": true, "articleId": "98765" }
+```
+
+---
+
+## 11. セクション/カテゴリ配下の記事を一括で公開範囲変更
 
 ```
 POST /bulk-visibility
@@ -355,7 +427,7 @@ POST /bulk-visibility?categoryId=5506621409950&userSegmentId=12345678
 
 ---
 
-## 9. ユーザーセグメント一覧取得
+## 12. ユーザーセグメント一覧取得
 
 ```
 GET /user-segments
@@ -380,7 +452,7 @@ GET /user-segments
 
 ---
 
-## 10. ブランド一覧取得
+## 13. ブランド一覧取得
 
 ```
 GET /brands
@@ -401,19 +473,23 @@ GET /brands
 
 ## エンドポイント早見表
 
-| Method | Path | 必須クエリ | Body |
-|---|---|---|---|
-| GET | `/categories` | なし | なし |
-| POST | `/categories` | なし | `{locale,name,description}` または配列 |
-| GET | `/sections` | `categoryId` | なし |
-| POST | `/sections` | `categoryId` | `{locale,name,description}` または配列 |
-| GET | `/articles` | `sectionId` | なし |
-| POST | `/articles` | `sectionId` | `{title,body,locale,user_segment_id,permission_group_id,label_names}` または配列 |
-| PATCH | `/articles` | `articleId` | 更新したいフィールドのみ |
-| POST | `/bulk-visibility` | `sectionId` または `categoryId`, `userSegmentId` | なし |
-| GET | `/user-segments` | なし | なし |
-| GET | `/brands` | なし | なし |
+| Method | Path | 必須クエリ | Body | 備考 |
+|---|---|---|---|---|
+| GET | `/categories` | なし | なし | |
+| POST | `/categories` | なし | `{locale,name,description}` または配列 | |
+| DELETE | `/categories` | `categoryId` | なし | 配下も含めて完全削除 |
+| GET | `/sections` | `categoryId` | なし | |
+| POST | `/sections` | `categoryId` | `{locale,name,description}` または配列 | |
+| DELETE | `/sections` | `sectionId` | なし | 配下の記事もアーカイブ |
+| GET | `/articles` | `sectionId` | なし | |
+| POST | `/articles` | `sectionId` | `{title,body,locale,user_segment_id,permission_group_id,label_names}` または配列 | |
+| PATCH | `/articles` | `articleId` | 更新したいフィールドのみ | |
+| DELETE | `/articles` | `articleId` | なし | **完全削除ではなくアーカイブ** |
+| POST | `/bulk-visibility` | `sectionId` または `categoryId`, `userSegmentId` | なし | |
+| GET | `/user-segments` | なし | なし | |
+| GET | `/brands` | なし | なし | |
 
 すべて `brandDomain` をオプション付与可能。全エンドポイント `X-API-Key` ヘッダー必須（`DASHBOARD_API_KEY`未設定時のみ任意）。
 
-> 本ダッシュボード（help-center-admin）が実際に利用しているのは 1〜7, 9 です。8, 10 は現時点でUIから未使用（将来の拡張余地として記載）。
+> 本ダッシュボード（help-center-admin）が実際に利用しているのは 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12 です。11, 13 は現時点でUIから未使用（将来の拡張余地として記載）。
+> なお本アプリの⚙接続設定は現状Worker URLのみで、`X-API-Key`/`brandDomain`は送信していません（[README](../README.md)参照）。

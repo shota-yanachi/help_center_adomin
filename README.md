@@ -18,9 +18,12 @@ npm run dev
 ## 画面構成
 
 - 左サイドバー（ダーク、幅170px）: カテゴリ→セクションのツリー（常時展開）。
+  カテゴリ・セクションはホバーで×ボタンが出て削除可能（配下も削除/アーカイブされるため確認ダイアログあり）。
   下部に「＋新規カテゴリ」「＋新規セクション」「⚙ 接続設定」。
-- メインパネル: パンくず → 記事一覧（タイトル・ID・公開範囲バッジ・切替ボタン） →
-  記事追加UI（左: 個別入力フォーム／右: JSON一括入力）。
+- メインパネル: パンくず → 記事一覧（チェックボックス・タイトル・ID・公開範囲バッジ・切替ボタン、
+  クリックで本文/ラベルを展開表示） → 記事追加UI（左: 個別入力フォーム／右: JSON一括入力）。
+  チェックボックスで複数選択し、上部の「選択した記事をアーカイブ」から一括削除できる
+  （Zendesk仕様上、記事のDELETEは完全削除ではなくアーカイブ）。
 - セクション未選択時・未接続時は案内文のみ表示。
 
 ## API 仕様（`help-center-worker.js`）
@@ -29,16 +32,19 @@ npm run dev
 
 概要:
 
-| Method | Path | 必須クエリ | Body |
-|---|---|---|---|
-| GET | `/categories` | なし | なし |
-| POST | `/categories` | なし | `{name,description?,locale?}` または配列 |
-| GET | `/sections` | `categoryId` | なし |
-| POST | `/sections` | `categoryId` | `{name,description?,locale?}` または配列 |
-| GET | `/articles` | `sectionId` | なし |
-| POST | `/articles` | `sectionId` | `{title,body?,label_names?,user_segment_id?,...}` または配列 |
-| PATCH | `/articles` | `articleId` | 更新したいフィールドのみ（例: `{user_segment_id}`） |
-| GET | `/user-segments` | なし | なし |
+| Method | Path | 必須クエリ | Body | 備考 |
+|---|---|---|---|---|
+| GET | `/categories` | なし | なし | |
+| POST | `/categories` | なし | `{name,description?,locale?}` または配列 | |
+| DELETE | `/categories` | `categoryId` | なし | 配下も含めて完全削除 |
+| GET | `/sections` | `categoryId` | なし | |
+| POST | `/sections` | `categoryId` | `{name,description?,locale?}` または配列 | |
+| DELETE | `/sections` | `sectionId` | なし | 配下の記事もアーカイブ |
+| GET | `/articles` | `sectionId` | なし | |
+| POST | `/articles` | `sectionId` | `{title,body?,label_names?,user_segment_id?,...}` または配列 | |
+| PATCH | `/articles` | `articleId` | 更新したいフィールドのみ（例: `{user_segment_id}`） | |
+| DELETE | `/articles` | `articleId` | なし | 完全削除ではなくアーカイブ |
+| GET | `/user-segments` | なし | なし | |
 
 Worker自体は `X-API-Key` ヘッダーや `brandDomain` クエリにも対応していますが、本アプリの
 ⚙接続設定は現状 **Worker URLのみ**です（`DASHBOARD_API_KEY`未設定・単一ブランド運用が前提）。

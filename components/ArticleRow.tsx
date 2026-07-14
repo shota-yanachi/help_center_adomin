@@ -4,7 +4,15 @@ import { useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
 import { Article } from "@/lib/types";
 
-export function ArticleRow({ article }: { article: Article }) {
+export function ArticleRow({
+  article,
+  selected,
+  onToggleSelect,
+}: {
+  article: Article;
+  selected: boolean;
+  onToggleSelect: () => void;
+}) {
   const { segments, toggleArticleVisibility } = useDashboard();
   const [open, setOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -27,6 +35,14 @@ export function ArticleRow({ article }: { article: Article }) {
   return (
     <div className="border-b border-zinc-100 text-sm last:border-b-0">
       <div className="relative flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-50">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onToggleSelect}
+          onClick={(e) => e.stopPropagation()}
+          className="shrink-0"
+          aria-label={`${article.title}を選択`}
+        />
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}

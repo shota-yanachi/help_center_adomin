@@ -104,6 +104,15 @@ export function createCategoriesBulk(
   });
 }
 
+export function deleteCategory(settings: ConnectionSettings, categoryId: number) {
+  return request<{ deleted: boolean; categoryId: string }>(
+    settings,
+    "/categories",
+    { method: "DELETE" },
+    { categoryId }
+  );
+}
+
 // --- セクション ---
 
 export function listSections(settings: ConnectionSettings, categoryId: number) {
@@ -138,6 +147,15 @@ export function createSectionsBulk(
     "/sections",
     { method: "POST", body: JSON.stringify(items) },
     { categoryId }
+  );
+}
+
+export function deleteSection(settings: ConnectionSettings, sectionId: number) {
+  return request<{ deleted: boolean; sectionId: string }>(
+    settings,
+    "/sections",
+    { method: "DELETE" },
+    { sectionId }
   );
 }
 
@@ -184,6 +202,15 @@ export function createArticlesBulk(
     "/articles",
     { method: "POST", body: JSON.stringify(items) },
     { sectionId }
+  );
+}
+
+export function deleteArticle(settings: ConnectionSettings, articleId: number) {
+  return request<{ archived: boolean; articleId: string }>(
+    settings,
+    "/articles",
+    { method: "DELETE" },
+    { articleId }
   );
 }
 

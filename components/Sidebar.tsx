@@ -15,10 +15,53 @@ export function Sidebar() {
     isConfigured,
     loadingTree,
     treeError,
+    removeCategory,
+    removeSection,
   } = useDashboard();
   const [modal, setModal] = useState<"category" | "section" | "settings" | null>(
     null
   );
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  async function handleDeleteCategory(categoryId: number, name: string) {
+    if (
+      !window.confirm(
+        `カテゴリ「${name}」を削除します。配下の全セクション・記事も完全に削除され、元に戻せません。よろしいですか？`
+      )
+    ) {
+      return;
+    }
+    setDeletingId(categoryId);
+    try {
+      await removeCategory(categoryId);
+    } catch (e) {
+      alert(`削除に失敗しました: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function handleDeleteSection(
+    categoryId: number,
+    sectionId: number,
+    name: string
+  ) {
+    if (
+      !window.confirm(
+        `セクション「${name}」を削除します。配下の記事は全てアーカイブされます。よろしいですか？`
+      )
+    ) {
+      return;
+    }
+    setDeletingId(sectionId);
+    try {
+      await removeSection(categoryId, sectionId);
+    } catch (e) {
+      alert(`削除に失敗しました: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
     <>
@@ -47,25 +90,52 @@ export function Sidebar() {
             !loadingTree &&
             !treeError &&
             categories.map((category) => (
-              <div key={category.id} className="mb-3">
-                <div className="truncate px-1 py-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-                  {category.name}
+              <div key={category.id} className="group/category mb-3">
+                <div className="flex items-center gap-1 px-1 py-1">
+                  <span className="flex-1 truncate text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+                    {category.name}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={deletingId === category.id}
+                    onClick={() => handleDeleteCategory(category.id, category.name)}
+                    className="shrink-0 rounded px-1 text-zinc-600 opacity-0 hover:bg-zinc-800 hover:text-red-400 group-hover/category:opacity-100"
+                    title="カテゴリを削除"
+                    aria-label="カテゴリを削除"
+                  >
+                    ×
+                  </button>
                 </div>
                 <ul>
                   {(sectionsByCategory[category.id] ?? []).map((section) => {
                     const isActive = section.id === selectedSectionId;
                     return (
-                      <li key={section.id}>
+                      <li
+                        key={section.id}
+                        className="group/section flex items-center gap-1"
+                      >
                         <button
                           type="button"
                           onClick={() => selectSection(category.id, section.id)}
-                          className={`w-full truncate rounded px-2 py-1.5 text-left text-[13px] ${
+                          className={`flex-1 truncate rounded px-2 py-1.5 text-left text-[13px] ${
                             isActive
                               ? "bg-zinc-700 text-white"
                               : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
                           }`}
                         >
                           {section.name}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={deletingId === section.id}
+                          onClick={() =>
+                            handleDeleteSection(category.id, section.id, section.name)
+                          }
+                          className="shrink-0 rounded px-1 text-zinc-600 opacity-0 hover:bg-zinc-800 hover:text-red-400 group-hover/section:opacity-100"
+                          title="セクションを削除"
+                          aria-label="セクションを削除"
+                        >
+                          ×
                         </button>
                       </li>
                     );

@@ -61,6 +61,12 @@ type DashboardState = {
     articleId: number,
     userSegmentId: number | null
   ) => Promise<void>;
+
+  removeCategory: (categoryId: number) => Promise<void>;
+  removeSection: (categoryId: number, sectionId: number) => Promise<void>;
+  removeArticles: (
+    articleIds: number[]
+  ) => Promise<{ succeeded: number; failed: { id: number; message: string }[] }>;
 };
 
 const DashboardContext = createContext<DashboardState | null>(null);
@@ -228,6 +234,49 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     [settings, refreshArticles]
   );
 
+  const removeCategory = useCallback(
+    async (categoryId: number) => {
+      await api.deleteCategory(settings, categoryId);
+      if (selectedCategoryId === categoryId) {
+        setSelectedCategoryId(null);
+        setSelectedSectionId(null);
+      }
+      await refreshTree();
+    },
+    [settings, selectedCategoryId, refreshTree]
+  );
+
+  const removeSection = useCallback(
+    async (categoryId: number, sectionId: number) => {
+      await api.deleteSection(settings, sectionId);
+      if (selectedSectionId === sectionId) {
+        setSelectedSectionId(null);
+      }
+      await refreshTree();
+    },
+    [settings, selectedSectionId, refreshTree]
+  );
+
+  const removeArticles = useCallback(
+    async (articleIds: number[]) => {
+      const results = await Promise.allSettled(
+        articleIds.map((id) => api.deleteArticle(settings, id))
+      );
+      const failed: { id: number; message: string }[] = [];
+      results.forEach((r, i) => {
+        if (r.status === "rejected") {
+          failed.push({
+            id: articleIds[i],
+            message: r.reason instanceof Error ? r.reason.message : String(r.reason),
+          });
+        }
+      });
+      await refreshArticles();
+      return { succeeded: articleIds.length - failed.length, failed };
+    },
+    [settings, refreshArticles]
+  );
+
   const value = useMemo<DashboardState>(
     () => ({
       settings,
@@ -253,6 +302,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       addArticle,
       addArticlesBulk,
       toggleArticleVisibility,
+      removeCategory,
+      removeSection,
+      removeArticles,
     }),
     [
       settings,
@@ -278,6 +330,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       addArticle,
       addArticlesBulk,
       toggleArticleVisibility,
+      removeCategory,
+      removeSection,
+      removeArticles,
     ]
   );
 
