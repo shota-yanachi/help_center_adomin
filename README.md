@@ -40,7 +40,12 @@ npm run dev
 | PATCH | `/articles` | `articleId` | 更新したいフィールドのみ（例: `{user_segment_id}`） |
 | GET | `/user-segments` | なし | なし |
 
-全エンドポイント共通で `X-API-Key` ヘッダー必須、`brandDomain` クエリを任意付与可能。
+Worker自体は `X-API-Key` ヘッダーや `brandDomain` クエリにも対応していますが、本アプリの
+⚙接続設定は現状 **Worker URLのみ**です（`DASHBOARD_API_KEY`未設定・単一ブランド運用が前提）。
+`brandDomain`はサブドメインではなく`xxx.zendesk.com`のようなFQDNが必要な点に注意
+（裸のサブドメインを渡すとZendesk側で403になることを確認済み）。将来これらが必要になったら
+`lib/api.ts`・`components/SettingsModal.tsx`に入力欄を復活させてください。
+
 配列で作成した場合のレスポンスは `{ created, results: [{status, input, response}] }` で、
 1件ごとの成否は `results[].status` で判定します（本アプリはこれを解釈し、失敗件数を画面に表示します）。
 
