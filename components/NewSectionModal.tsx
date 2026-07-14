@@ -1,0 +1,159 @@
+"use client";
+
+import { useState } from "react";
+import { Modal, Tabs } from "./Modal";
+import { useDashboard } from "@/context/DashboardContext";
+
+export function NewSectionModal({ onClose }: { onClose: () => void }) {
+  const { categories, selectedCategoryId, addSection, addSectionsBulk } =
+    useDashboard();
+  const [categoryId, setCategoryId] = useState<number | null>(
+    selectedCategoryId ?? categories[0]?.id ?? null
+  );
+  const [tab, setTab] = useState<"single" | "bulk">("single");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [json, setJson] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [bulkSummary, setBulkSummary] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSingleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!categoryId) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      await addSection(categoryId, {
+        name: name.trim(),
+        description: description.trim() || undefined,
+      });
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "作成に失敗しました");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleBulkSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!categoryId) return;
+    setError(null);
+    setBulkSummary(null);
+    setSubmitting(true);
+    try {
+      const parsed = JSON.parse(json);
+      const items = Array.isArray(parsed) ? parsed : parsed.sections;
+      if (!Array.isArray(items)) throw new Error("JSONは配列、または { sections: [...] } の形式で入力してください");
+      const result = await addSectionsBulk(categoryId, items);
+      const failed = result.results.filter((r) => r.status >= 300);
+      if (failed.length === 0) {
+        onClose();
+      } else {
+        setBulkSummary(
+          `${result.created}/${result.results.length}件作成に成功しました。失敗: ${failed
+            .map((f) => f.response?.description || f.response?.error || f.status)
+            .join(", ")}`
+        );
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "作成に失敗しました");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (categories.length === 0) {
+    return (
+      <Modal title="新規セクション" onClose={onClose}>
+        <p className="text-sm text-zinc-500">
+          先にカテゴリを作成してください。
+        </p>
+      </Modal>
+    );
+  }
+
+  return (
+    <Modal title="新規セクション" onClose={onClose}>
+      <label className="mb-4 flex flex-col gap-1 text-sm">
+        <span className="font-medium text-zinc-700">所属カテゴリ</span>
+        <select
+          value={categoryId ?? ""}
+          onChange={(e) => setCategoryId(Number(e.target.value))}
+          className="input"
+        >
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <Tabs
+        tabs={[
+          { key: "single", label: "個別入力" },
+          { key: "bulk", label: "JSON一括" },
+        ]}
+        active={tab}
+        onChange={(k) => setTab(k as "single" | "bulk")}
+      />
+      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+      {tab === "single" ? (
+        <form onSubmit={handleSingleSubmit} className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-zinc-700">セクション名</span>
+            <input
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="input"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-zinc-700">説明（任意）</span>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              className="input"
+            />
+          </label>
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={onClose} className="btn-secondary">
+              キャンセル
+            </button>
+            <button type="submit" disabled={submitting} className="btn-primary">
+              {submitting ? "作成中..." : "作成"}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <form onSubmit={handleBulkSubmit} className="flex flex-col gap-3">
+          <p className="text-xs text-zinc-500">
+            例: {`[{"name": "よくある質問", "description": "任意"}]`}
+          </p>
+          {bulkSummary && (
+            <p className="text-xs text-amber-600">{bulkSummary}</p>
+          )}
+          <textarea
+            required
+            value={json}
+            onChange={(e) => setJson(e.target.value)}
+            rows={10}
+            placeholder='[{"name": "セクション名"}]'
+            className="input font-mono text-xs"
+          />
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={onClose} className="btn-secondary">
+              キャンセル
+            </button>
+            <button type="submit" disabled={submitting} className="btn-primary">
+              {submitting ? "作成中..." : "一括作成"}
+            </button>
+          </div>
+        </form>
+      )}
+    </Modal>
+  );
+}

@@ -5,20 +5,15 @@ Help Center 管理ダッシュボード。Cloudflare Worker（`help-center-worke
 
 ```bash
 npm install
-cp .env.example .env.local   # 任意。無くても動作する
 npm run dev
 ```
 
+環境変数は不要です。Worker URLは実行時に⚙モーダルから入力してlocalStorageに保存する方式のため、
+`.env`ファイルを用意する必要はありません。
+
 `http://localhost:3000` を開くとパスワード認証画面が表示されます（パスワード: `miruto`）。
-ログイン後、左サイドバー下部の「⚙ 接続設定」から以下を入力してください（localStorageに保存されます）。
-
-- **Worker URL**: `help-center-worker.js` をデプロイした Worker のURL
-- **APIキー**: Worker側 `DASHBOARD_API_KEY` と同じ値（`X-API-Key`ヘッダーで送信）
-- **ブランド (brandDomain)**: マルチブランド運用時のみ。空欄ならWorker側のデフォルトブランドを使用
-
-`.env.example` の `NEXT_PUBLIC_DEFAULT_WORKER_URL` / `NEXT_PUBLIC_DEFAULT_BRAND_DOMAIN` は、
-開発時に⚙モーダルの初期値をプリセットしたい場合のみ使う任意設定です。APIキーは
-ブラウザに露出させたくないため環境変数には含めず、必ず⚙モーダルから入力します。
+ログイン後、左サイドバー下部の「⚙ 接続設定」から **Worker URL**（`help-center-worker.js` を
+デプロイした WorkerのURL）を入力してください（localStorageに保存されます）。
 
 ## 画面構成
 
